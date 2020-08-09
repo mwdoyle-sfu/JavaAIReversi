@@ -47,7 +47,7 @@ package com.aireversi;
 
 import java.util.*;
 
-class Board{
+class Board implements Cloneable {
 
     public class Point{
         int x, y;
@@ -88,6 +88,15 @@ class Board{
                 {'_','_','_','_','_','_','_','_',},
         };
     }
+
+    public Board( Board orig ){
+        this.board = orig.board;
+    }
+
+    public Board clone(Board b) throws CloneNotSupportedException {
+        return new Board( this );
+    }
+
 
     private void findPlaceableLocations(char player, char opponent, HashSet<Point> placeablePositions){
         for(int i=0;i<8;++i){
@@ -266,7 +275,7 @@ class Board{
 }
 
 public class Reversi{
-    public static void twoPlayers(Board b){
+    public static void twoPlayers(Board b) throws CloneNotSupportedException {
         Scanner scan = new Scanner(System.in);
         Board.Point move = b.new Point(-1, -1);
         System.out.println("Black Moves first");
@@ -302,12 +311,68 @@ public class Reversi{
                 // TODO 1 testing stuff here
                 System.out.println(Arrays.toString(blackPlaceableLocations.toArray()));
 
+                // create data structure for winning moves
+                Map<Board.Point, Integer> moveWinCount = new HashMap<>();
+
+                for (Board.Point loc : blackPlaceableLocations) {
+//                    System.out.println(loc);
+                    moveWinCount.put(loc, 0);
+                }
+
+
+                // make random play outs
+                for (Board.Point loc : blackPlaceableLocations) {
+                    // change the i variable
+                    for (int i = 0; i < 2; i++) {
+                        // play out each move i times
+                        int resultValue = randomPlayout(b, loc);
+                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + 1);
+                    }
+                }
+
+                // display results
+                System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
+
+                Map.Entry<Board.Point, Integer> maxEntry = null;
+
+                for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
+                {
+                    if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
+                    {
+                        maxEntry = entry;
+                    }
+                }
+                // make the move
+                System.out.println("computer chooses...");
+                System.out.println(maxEntry.getKey().x + "" + maxEntry.getKey().y);
+                move.y = maxEntry.getKey().y;
+                move.x = maxEntry.getKey().x;
 
 
 
-                input = scan.next();
-                move.y = b.coordinateX(input.charAt(0));
-                move.x = (Integer.parseInt(input.charAt(1)+"")-1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                // old code
+//                input = scan.next();
+//                move.y = b.coordinateX(input.charAt(0));
+//                move.x = (Integer.parseInt(input.charAt(1)+"")-1);
+
+
+
 
                 while(!blackPlaceableLocations.contains(move)){
                     System.out.println("Invalid move!\n\nPlace move (Black): ");
@@ -345,33 +410,52 @@ public class Reversi{
 
 
                 // create data structure for winning moves
-                Map moveWinCount = new HashMap();
+                Map<Board.Point, Integer> moveWinCount = new HashMap<>();
 
                 for (Board.Point loc : whitePlaceableLocations) {
-                    System.out.println(loc);
+//                    System.out.println(loc);
                     moveWinCount.put(loc, 0);
                 }
 
+
                 // make random play outs
                 for (Board.Point loc : whitePlaceableLocations) {
-                    for (int i = 0; i < 1; i++) {
+                    // change the i variable
+                    for (int i = 0; i < 2; i++) {
                         // play out each move i times
-//                        moveWinCount.put(loc, moveWinCount.get(loc) + 1);
+                        int resultValue = randomPlayout(b, loc);
+                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + 1);
                     }
                 }
 
                 // display results
                 System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
 
+                Map.Entry<Board.Point, Integer> maxEntry = null;
 
-                // pass in game
-//                randomPlayout(b);
+                for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
+                {
+                    if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
+                    {
+                        maxEntry = entry;
+                    }
+                }
+                // make the move
+                System.out.println("computer chooses...");
+                System.out.println(maxEntry.getKey().x + "" + maxEntry.getKey().y);
+                move.y = maxEntry.getKey().y;
+                move.x = maxEntry.getKey().x;
+//                Object randomName = moveWinCount.keySet().toArray()[new Random().nextInt(moveWinCount.keySet().toArray().length)];
 
 
 
+//                System.out.println(randomName.toString()+"="+moveWinCount.get(randomName));
+
+
+//                // old code
 //                input = scan.next();
-                move.y = 4;
-                move.x = 2;
+//                move.y = 4;
+//                move.x = 2;
 //                System.out.println("move placed: " + move.y + move.x);
 
 //                move.y = b.coordinateX(input.charAt(0));
@@ -390,13 +474,25 @@ public class Reversi{
         }
     }
 
-    private static void randomPlayout(Board b) {
-        System.out.println("Displaying board in printout");
-        b.displayBoard(b);
+    private static int randomPlayout(Board b, Board.Point loc) throws CloneNotSupportedException {
+        Board clone = (Board) b.clone(b);
+        HashSet<Board.Point> blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
+        HashSet<Board.Point> whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+
+        int statusOfGame = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+
+        while (statusOfGame != -2) {
+            //play game
+            // white goes
+            // black goes
+        }
+//        1 white wins
+//       -1 black wins
+        return statusOfGame;
     }
 
 
-    public static void main(String[] args){
+    public static void main(String[] args) throws CloneNotSupportedException {
         Board b = new Board();
         twoPlayers(b);
     }
