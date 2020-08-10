@@ -45,9 +45,15 @@
 
 package com.aireversi;
 
+import com.rits.cloning.Cloner;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.*;
 
-class Board implements Cloneable {
+class Board {
 
     public class Point{
         int x, y;
@@ -74,7 +80,7 @@ class Board implements Cloneable {
 
     private final char[][] board;
     int WScore, BScore, remaining;
-    private final char boardX[] = new char[]{'A','B','C','D','E','F','G','H'};
+    private char boardX[] = new char[]{'A','B','C','D','E','F','G','H'};
 
     public Board(){
         board = new char[][]{
@@ -88,15 +94,6 @@ class Board implements Cloneable {
                 {'_','_','_','_','_','_','_','_',},
         };
     }
-
-    public Board( Board orig ){
-        this.board = orig.board;
-    }
-
-    public Board clone(Board b) throws CloneNotSupportedException {
-        return new Board( this );
-    }
-
 
     private void findPlaceableLocations(char player, char opponent, HashSet<Point> placeablePositions){
         for(int i=0;i<8;++i){
@@ -275,7 +272,7 @@ class Board implements Cloneable {
 }
 
 public class Reversi{
-    public static void twoPlayers(Board b) throws CloneNotSupportedException {
+    public static int twoPlayers(Board b) throws CloneNotSupportedException {
         Scanner scan = new Scanner(System.in);
         Board.Point move = b.new Point(-1, -1);
         System.out.println("Black Moves first");
@@ -293,9 +290,9 @@ public class Reversi{
             b.showPlaceableLocations(blackPlaceableLocations, 'B', 'W');
             result = b.gameResult(whitePlaceableLocations, blackPlaceableLocations);
 
-            if(result == 0){System.out.println("It is a draw.");break;}
-            else if(result==1){System.out.println("White wins: "+b.WScore+":"+b.BScore);break;}
-            else if(result==-1){System.out.println("Black wins: "+b.BScore+":"+b.WScore);break;}
+            if(result == 0){System.out.println("It is a draw.");return result;}
+            else if(result==1){System.out.println("White wins: "+b.WScore+":"+b.BScore);return result;}
+            else if(result==-1){System.out.println("Black wins: "+b.BScore+":"+b.WScore);return result;}
 
             if(blackPlaceableLocations.isEmpty()){
                 System.out.println("Black needs to skip... Passing to white");
@@ -305,28 +302,20 @@ public class Reversi{
             if(!skip){
                 System.out.println("Place move (Black): ");
 
-
-
-
-                // TODO 1 testing stuff here
-                System.out.println(Arrays.toString(blackPlaceableLocations.toArray()));
-
                 // create data structure for winning moves
                 Map<Board.Point, Integer> moveWinCount = new HashMap<>();
 
                 for (Board.Point loc : blackPlaceableLocations) {
-//                    System.out.println(loc);
                     moveWinCount.put(loc, 0);
                 }
-
 
                 // make random play outs
                 for (Board.Point loc : blackPlaceableLocations) {
                     // change the i variable
                     for (int i = 0; i < 2; i++) {
                         // play out each move i times
-                        int resultValue = randomPlayout(b, loc);
-                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + 1);
+                        int resultValue = randomPlayout(b, loc, 'B', 'W');
+                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + resultValue);
                     }
                 }
 
@@ -334,7 +323,6 @@ public class Reversi{
                 System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
 
                 Map.Entry<Board.Point, Integer> maxEntry = null;
-
                 for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
                 {
                     if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
@@ -343,36 +331,15 @@ public class Reversi{
                     }
                 }
                 // make the move
-                System.out.println("computer chooses...");
+                System.out.println("black computer chooses...");
                 System.out.println(maxEntry.getKey().x + "" + maxEntry.getKey().y);
                 move.y = maxEntry.getKey().y;
                 move.x = maxEntry.getKey().x;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                 // old code
 //                input = scan.next();
 //                move.y = b.coordinateX(input.charAt(0));
 //                move.x = (Integer.parseInt(input.charAt(1)+"")-1);
-
-
-
 
                 while(!blackPlaceableLocations.contains(move)){
                     System.out.println("Invalid move!\n\nPlace move (Black): ");
@@ -392,9 +359,9 @@ public class Reversi{
             b.showPlaceableLocations(whitePlaceableLocations, 'W', 'B');
             result = b.gameResult(whitePlaceableLocations, blackPlaceableLocations);
 
-            if(result==0){System.out.println("It is a draw.");break;}
-            else if(result==1){System.out.println("White wins: "+b.WScore+":"+b.BScore);break;}
-            else if(result==-1){System.out.println("Black wins: "+b.BScore+":"+b.WScore);break;}
+            if(result==0){System.out.println("It is a draw.");return result;}
+            else if(result==1){System.out.println("White wins: "+b.WScore+":"+b.BScore);return result;}
+            else if(result==-1){System.out.println("Black wins: "+b.BScore+":"+b.WScore);return result;}
 
             if(whitePlaceableLocations.isEmpty()){
                 System.out.println("White needs to skip... Passing to Black");
@@ -404,27 +371,20 @@ public class Reversi{
             if(!skip){
                 System.out.println("Place move (White): ");
 
-
-                // TODO 2 testing stuff here
-//                System.out.println(Arrays.toString(whitePlaceableLocations.toArray()));
-
-
                 // create data structure for winning moves
                 Map<Board.Point, Integer> moveWinCount = new HashMap<>();
 
                 for (Board.Point loc : whitePlaceableLocations) {
-//                    System.out.println(loc);
                     moveWinCount.put(loc, 0);
                 }
-
 
                 // make random play outs
                 for (Board.Point loc : whitePlaceableLocations) {
                     // change the i variable
                     for (int i = 0; i < 2; i++) {
                         // play out each move i times
-                        int resultValue = randomPlayout(b, loc);
-                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + 1);
+                        int resultValue = randomPlayout(b, loc, 'W', 'B');
+                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + resultValue);
                     }
                 }
 
@@ -432,7 +392,6 @@ public class Reversi{
                 System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
 
                 Map.Entry<Board.Point, Integer> maxEntry = null;
-
                 for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
                 {
                     if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
@@ -441,25 +400,17 @@ public class Reversi{
                     }
                 }
                 // make the move
-                System.out.println("computer chooses...");
+                System.out.println("white computer chooses...");
                 System.out.println(maxEntry.getKey().x + "" + maxEntry.getKey().y);
                 move.y = maxEntry.getKey().y;
                 move.x = maxEntry.getKey().x;
-//                Object randomName = moveWinCount.keySet().toArray()[new Random().nextInt(moveWinCount.keySet().toArray().length)];
 
-
-
-//                System.out.println(randomName.toString()+"="+moveWinCount.get(randomName));
-
-
-//                // old code
+                // old code
 //                input = scan.next();
-//                move.y = 4;
-//                move.x = 2;
-//                System.out.println("move placed: " + move.y + move.x);
-
 //                move.y = b.coordinateX(input.charAt(0));
 //                move.x = (Integer.parseInt(input.charAt(1)+"")-1);
+//                System.out.println("move placed: " + move.y + move.x);
+
 
                 while(!whitePlaceableLocations.contains(move)){
                     System.out.println("Invalid move!\n\nPlace move (White): ");
@@ -474,23 +425,188 @@ public class Reversi{
         }
     }
 
-    private static int randomPlayout(Board b, Board.Point loc) throws CloneNotSupportedException {
-        Board clone = (Board) b.clone(b);
-        HashSet<Board.Point> blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
-        HashSet<Board.Point> whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+    private static int randomPlayout(Board b, Board.Point loc, char p, char o) {
+        Cloner cloner = new Cloner();
+        Board clone = cloner.deepClone(b);
 
-        int statusOfGame = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+        int statusOfGame;
+        // make move
+        clone.placeMove(loc, p, o);
 
-        while (statusOfGame != -2) {
-            //play game
-            // white goes
-            // black goes
+        if (p == 'B') { // if black use these basic heuristics
+            // play out game randomly
+            statusOfGame = FinalPlayout(clone, p, o);
+        } else { // if white use these custom heuristics
+//            statusOfGame = FinalPlayout(clone, p, o);
+            statusOfGame = FinalPlayoutWithHeuristics(clone, p, o);
         }
-//        1 white wins
-//       -1 black wins
+
         return statusOfGame;
     }
 
+    private static int FinalPlayout(Board clone, char p, char o) {
+
+        Board.Point move = clone.new Point(-1, -1);
+        int result;
+        Boolean skip;
+
+        while(true){
+            skip = false;
+
+            HashSet<Board.Point> blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
+            HashSet<Board.Point> whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+
+            // if white just went start here...
+            if (p != 'B') {
+
+                result = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+
+                // TODO change these heuristics so black gets +1 for wins, return 1 rather than result
+                // result = 1 white wins, -1 black wins, 0 draw
+                if (result == 0){return result;}
+                else if (result == 1){return result;}
+                else if (result == -1){return result;}
+
+                if (blackPlaceableLocations.isEmpty()) {
+                    skip = true;
+                }
+
+                if (!skip) {
+
+                    List<Board.Point> listBlack = new ArrayList<Board.Point>(blackPlaceableLocations);
+//                    Board.Point randomMoveBlack = listBlack.get(0);
+
+                    // trying random
+                    Random rand = new Random();
+                    Board.Point randomMoveBlack = listBlack.get(rand.nextInt(listBlack.size()));
+
+                    // old code
+                    move.y = randomMoveBlack.y;
+                    move.x = randomMoveBlack.x;
+                    clone.placeMove(move, 'B', 'W');
+                    clone.updateScores();
+                }
+            }
+
+            p = 'X';
+
+            skip = false;
+
+            // if black went first start here...
+            whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+            blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
+
+            result = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+
+            // TODO change these heuristics so black gets +1 for wins, return 1 rather than result
+            // result = 1 white wins, -1 black wins, 0 draw
+            if(result==0){return result;}
+            else if(result==1){return result;}
+            else if(result==-1){return result;}
+
+            if(whitePlaceableLocations.isEmpty()){
+                skip = true;
+            }
+
+            if(!skip){
+
+                List<Board.Point> listWhite = new ArrayList<Board.Point>(whitePlaceableLocations);
+//                Board.Point randomMoveWhite = listWhite.get(0);
+                Random rand = new Random();
+                Board.Point randomMoveWhite = listWhite.get(rand.nextInt(listWhite.size()));
+
+
+                // old code
+                move.y = randomMoveWhite.y;
+                move.x = randomMoveWhite.x;
+
+                clone.placeMove(move, 'W', 'B');
+                clone.updateScores();
+            }
+        }
+    }
+
+    private static int FinalPlayoutWithHeuristics(Board clone, char p, char o) {
+
+        Board.Point move = clone.new Point(-1, -1);
+        int result;
+        Boolean skip;
+
+        while(true){
+            skip = false;
+
+            HashSet<Board.Point> blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
+            HashSet<Board.Point> whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+
+            // if white just went start here...
+            if (p != 'B') {
+
+                result = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+
+                // TODO change these heuristics so black gets +??? for wins, return 1 rather than result
+                // result = 1 white wins, -1 black wins, 0 draw
+                if (result == 0){return result;}
+                else if (result == 1){return result;}
+                else if (result == -1){return result;}
+
+                if (blackPlaceableLocations.isEmpty()) {
+                    skip = true;
+                }
+
+                if (!skip) {
+
+                    List<Board.Point> listBlack = new ArrayList<Board.Point>(blackPlaceableLocations);
+//                    Board.Point randomMoveBlack = listBlack.get(0);
+
+                    // trying random
+                    Random rand = new Random();
+                    Board.Point randomMoveBlack = listBlack.get(rand.nextInt(listBlack.size()));
+
+                    // old code
+                    move.y = randomMoveBlack.y;
+                    move.x = randomMoveBlack.x;
+                    clone.placeMove(move, 'B', 'W');
+                    clone.updateScores();
+                }
+            }
+
+            p = 'X';
+
+            skip = false;
+
+            // if black went first start here...
+            whitePlaceableLocations = clone.getPlaceableLocations('W', 'B');
+            blackPlaceableLocations = clone.getPlaceableLocations('B', 'W');
+
+            result = clone.gameResult(whitePlaceableLocations, blackPlaceableLocations);
+
+            // TODO change these heuristics so black gets +???? for wins, return 1 rather than result
+            // result = 1 white wins, -1 black wins, 0 draw
+            if(result==0){return result;}
+            else if(result==1){return result;}
+            else if(result==-1){return result;}
+
+            if(whitePlaceableLocations.isEmpty()){
+                skip = true;
+            }
+
+            if(!skip){
+
+                List<Board.Point> listWhite = new ArrayList<Board.Point>(whitePlaceableLocations);
+//                Board.Point randomMoveWhite = listWhite.get(0);
+                Random rand = new Random();
+                Board.Point randomMoveWhite = listWhite.get(rand.nextInt(listWhite.size()));
+
+
+                // old code
+                move.y = randomMoveWhite.y;
+                move.x = randomMoveWhite.x;
+
+                clone.placeMove(move, 'W', 'B');
+                clone.updateScores();
+            }
+        }
+    }
 
     public static void main(String[] args) throws CloneNotSupportedException {
         Board b = new Board();
