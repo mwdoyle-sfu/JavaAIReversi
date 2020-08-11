@@ -2,7 +2,6 @@
 // 301322233
 // mwdoyle@sfu.ca
 
-
 // Board class inspired by: http://www.codebytes.in/2014/12/reversi-two-players-java-program.html
 package com.aireversi;
 

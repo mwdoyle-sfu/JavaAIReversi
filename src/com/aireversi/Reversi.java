@@ -2,9 +2,6 @@
 // 301322233
 // mwdoyle@sfu.ca
 
-
-// Board Reversi class inspired by: http://www.codebytes.in/2014/12/reversi-two-players-java-program.html
-
 // Example of play
 //Black Moves first
 //
@@ -48,6 +45,7 @@
 //        7 _ _ _ _ _ _ _ _
 //        8 _ _ _ _ _ _ _ _
 
+// Reversi class inspired by: http://www.codebytes.in/2014/12/reversi-two-players-java-program.html
 
 package com.aireversi;
 
@@ -56,12 +54,19 @@ import com.rits.cloning.Cloner;
 import java.util.*;
 
 public class Reversi{
-
-    // Black uses pure MCTS and x play outs
+    // change values here to affect the heuristics
+    // Black uses pure M.C.T.S and 1000 play outs
     private static final int BLACK_PLAY_OUTS = 1000;
-    // White uses and x play outs
+    // White uses and 1000 play outs
     private static final int WHITE_PLAY_OUTS = 1000;
-
+    // choose how often white makes a random guess (explore) rather than doing play outs
+    private static final int doRandomGuessEvery = 999; // ie. 0 = random guess every turn, 999 = never make random guess
+    // points awarded for a white player win in random play outs
+    private static final int whiteWinHeuristic = 5;
+    private static final int whiteLossHeuristic = -5;
+    private static final int whiteDrawHeuristic = 5;
+    // increase this number to get data from multiple games
+    final static int gamesToPlay = 10;
 
     public static int twoPlayers(Board b, boolean userPlayer) {
 
@@ -73,6 +78,8 @@ public class Reversi{
         int result;
         Boolean skip;
         String input;
+        int counter = 0;
+        boolean randomPlayOut = true;
 
         while(true){
             skip = false;
@@ -83,6 +90,7 @@ public class Reversi{
             b.showPlaceableLocations(blackPlaceableLocations, 'B', 'W');
             result = b.gameResult(whitePlaceableLocations, blackPlaceableLocations);
 
+            // result = 1 white wins, -1 black wins, 0 draw
             if(result == 0){System.out.println("The game is a draw.");return result;}
             else if(result==1){System.out.println("The white player wins: "+b.WScore+":"+b.BScore+" by "+(Math.abs(b.WScore - b.BScore)));return result;}
             else if(result==-1){System.out.println("The black player wins: "+b.BScore+":"+b.WScore+" by "+(Math.abs(b.BScore - b.WScore)));return result;}
@@ -145,9 +153,7 @@ public class Reversi{
                     System.out.println("["+maxEntry.getKey().x + ", " + maxEntry.getKey().y+"]");
                     move.y = maxEntry.getKey().y;
                     move.x = maxEntry.getKey().x;
-
                 }
-
 
                 while(!blackPlaceableLocations.contains(move)){
                     System.out.println("Invalid move!\nIt's still blacks turn: ");
@@ -190,46 +196,68 @@ public class Reversi{
             if(!skip){
                 System.out.println("It's whites turn: ");
 
-                // create data structure for winning moves
-                Map<Board.Point, Integer> moveWinCount = new HashMap<>();
-
-                for (Board.Point loc : whitePlaceableLocations) {
-                    moveWinCount.put(loc, 0);
+                if (counter == doRandomGuessEvery) {
+                    randomPlayOut = false;
                 }
 
-                // make random play outs
-                for (Board.Point loc : whitePlaceableLocations) {
-                    // change the number of play outs for each move
-                    for (int i = 0; i < WHITE_PLAY_OUTS; i++) {
-                        // play out each move i times
-                        int resultValue = randomPlayout(b, loc, 'W', 'B');
-                        moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + resultValue);
+                if (randomPlayOut) { // make random play outs
+                    // create data structure for winning moves
+                    Map<Board.Point, Integer> moveWinCount = new HashMap<>();
+
+                    for (Board.Point loc : whitePlaceableLocations) {
+                        moveWinCount.put(loc, 0);
                     }
-                }
 
-                // display results
-                System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
+                    // make random play outs
+                    for (Board.Point loc : whitePlaceableLocations) {
+                        // change the number of play outs for each move
+                        for (int i = 0; i < WHITE_PLAY_OUTS; i++) {
+                            // play out each move i times
+                            int resultValue = randomPlayout(b, loc, 'W', 'B');
+                            moveWinCount.put(loc, moveWinCount.getOrDefault(loc, 0) + resultValue);
+                        }
+                    }
 
-                // find move with the highest score
-                Map.Entry<Board.Point, Integer> maxEntry = null;
-                for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
-                {
-                    if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
+                    // display results
+                    System.out.println(Arrays.toString(moveWinCount.entrySet().toArray()));
+
+                    // find move with the highest score
+                    Map.Entry<Board.Point, Integer> maxEntry = null;
+                    for (Map.Entry<Board.Point, Integer> entry : moveWinCount.entrySet())
                     {
-                        maxEntry = entry;
+                        if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0)
+                        {
+                            maxEntry = entry;
+                        }
                     }
-                }
-                // make the move
-                System.out.println("white chooses...");
-                System.out.println("["+maxEntry.getKey().x + ", " + maxEntry.getKey().y+"]");
-                move.y = maxEntry.getKey().y;
-                move.x = maxEntry.getKey().x;
+                    // make the move
+                    System.out.println("white chooses...");
+                    System.out.println("["+maxEntry.getKey().x + ", " + maxEntry.getKey().y+"]");
+                    move.y = maxEntry.getKey().y;
+                    move.x = maxEntry.getKey().x;
 
-                // for user input of white player
-//                input = scan.next();
-//                move.y = b.coordinateX(input.charAt(0));
-//                move.x = (Integer.parseInt(input.charAt(1)+"")-1);
-//                System.out.println("move placed: " + move.y + move.x);
+                    // for user input of white player
+//                    input = scan.next();
+//                    move.y = b.coordinateX(input.charAt(0));
+//                    move.x = (Integer.parseInt(input.charAt(1)+"")-1);
+//                    System.out.println("move placed: " + move.y + move.x);
+                    counter++;
+
+
+                } else { // don't make random play outs just choose randomly (explore)
+                    System.out.println("white chooses randomly...");
+
+                    List<Board.Point> listWhite = new ArrayList<Board.Point>(whitePlaceableLocations);
+                    Random rand = new Random();
+                    Board.Point randomMoveWhite = listWhite.get(rand.nextInt(listWhite.size()));
+
+                    move.y = randomMoveWhite.y;
+                    move.x = randomMoveWhite.x;
+                    System.out.println("["+randomMoveWhite.x + ", " + randomMoveWhite.y+"]");
+
+                    randomPlayOut = true;
+                    counter = 0;
+                }
 
 
                 while(!whitePlaceableLocations.contains(move)){
@@ -359,9 +387,9 @@ public class Reversi{
 
                 // change heuristics here
                 // result = 1 white wins, -1 black wins, 0 draw
-                if (result == 0){return 0;}
-                else if (result == 1){return 2;}
-                else if (result == -1){return -1;}
+                if (result == 0){return whiteDrawHeuristic;}
+                else if (result == 1){return whiteWinHeuristic;}
+                else if (result == -1){return whiteLossHeuristic;}
 
                 if (blackPlaceableLocations.isEmpty()) {
                     skip = true;
@@ -394,16 +422,15 @@ public class Reversi{
 
             // change heuristics here
             // result = 1 white wins, -1 black wins, 0 draw
-            if(result==0){return 0;}
-            else if(result==1){return 5;}
-            else if(result==-1){return -2;}
+            if(result==0){return whiteDrawHeuristic;}
+            else if(result==1){return whiteWinHeuristic;}
+            else if(result==-1){return whiteLossHeuristic;}
 
             if(whitePlaceableLocations.isEmpty()){
                 skip = true;
             }
 
             if(!skip){
-
                 List<Board.Point> listWhite = new ArrayList<Board.Point>(whitePlaceableLocations);
                 Random rand = new Random();
                 Board.Point randomMoveWhite = listWhite.get(rand.nextInt(listWhite.size()));
@@ -418,30 +445,48 @@ public class Reversi{
     }
 
     public static void main(String[] args) {
-        Board b = new Board();
 
         System.out.println("Enter your choice...\n" +
                            "-Play the computer (p)\n" +
                            "-Collect data using computer vs computer (d)");
         // https://www.w3schools.com/java/java_user_input.asp
         boolean userInput = true;
+        int blackWins = 0;
+        int whiteWins = 0;
+        int draw = 0;
+
         while (userInput) {
             Scanner myObj = new Scanner(System.in);  // Create a Scanner object
             System.out.println("Enter choice:");
             String userChoice = myObj.nextLine();  // Read user input
             System.out.println("Choice is: " + userChoice);  // Output user input
             if (userChoice.charAt(0) == 'p') {
+                Board b = new Board();
                 System.out.println("You are the black player input something like d3");  // Output user input
                 twoPlayers(b, true);
                 userInput = false;
             } else if (userChoice.charAt(0) == 'd'){
-                twoPlayers(b, false);
+                for (int i = 0; i < gamesToPlay; i++) {
+                    Board b = new Board();
+                    System.out.println("\n***********Game "+(i+1)+"***********");
+                    int r = twoPlayers(b, false);
+                    // result = 1 white wins, -1 black wins, 0 draw
+                    if (r == 1){
+                        whiteWins++;
+                    } else if (r == -1){
+                        blackWins++;
+                    } else {
+                        draw++;
+                    }
+                }
                 userInput = false;
             } else {
                 // do nothing
                 System.out.println("Invalid choice choose p or d");
-
             }
         }
+
+        System.out.println("\nEnd of run stats...\nBlack won "+blackWins+" game(s),"+" White won "+whiteWins+" game(s),"+" Draw games "+draw);
+
     }
 }
